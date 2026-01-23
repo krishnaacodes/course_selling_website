@@ -1,1 +1,1 @@
-"courese_selling_website" 
+"course_selling_website" 
