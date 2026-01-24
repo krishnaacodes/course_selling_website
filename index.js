@@ -11,9 +11,13 @@ let COURSES = [];
 
 
 function Adiminauthentication(req,res,next){
-  const {username, password}  = req.body;
+  const {username, password}  = req.headers;
+  console.log(username  + " " +  password);
+  console.log(ADMINS);
   const isexists = ADMINS.find(a=>a.username === username && a.password === password);
 
+  console.log(isexists);
+ 
   if(isexists){
     next();
   }else{
