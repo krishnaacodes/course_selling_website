@@ -9,6 +9,19 @@ let ADMINS = [];
 let USERS = [];
 let COURSES = [];
 
+
+function Adiminauthentication(req,res,next){
+  const {username, password}  = req.body;
+  const isexists = ADMINS.find(a=>a.username === username && a.password === password);
+
+  if(isexists){
+    next();
+  }else{
+    res.status(404).send("user or password is wrong or not found");
+  }
+
+}
+
 // Admin routes
 app.post('/admin/signup', (req, res) => {
   // logic to sign up admin
@@ -23,18 +36,10 @@ app.post('/admin/signup', (req, res) => {
   }
 });
 
-app.post('/admin/login', (req, res) => {
+app.post('/admin/login',Adiminauthentication, (req, res) => {
   // logic to log in admin
-  const {username,password} = req.body;
- console.log(ADMINS);
+    res.status(200).send("user logged in succesfully");
   
-  const isexists = ADMINS.find(a=>a.username === username && a.password === password);
-  console.log(isexists);
-  if(isexists){
-    res.status(200).send("logedin succesfully");
-  }else{
-    res.status(400).send("no user exists");
-  }
 });
 
 app.post('/admin/courses', (req, res) => {
