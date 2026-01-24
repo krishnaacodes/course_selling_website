@@ -10,7 +10,7 @@ let USERS = [];
 let COURSES = [];
 
 
-function Adiminauthentication(req,res,next){
+function Adminauthentication(req,res,next){
   const {username, password}  = req.headers;
   console.log(username  + " " +  password);
   console.log(ADMINS);
@@ -31,6 +31,7 @@ app.post('/admin/signup', (req, res) => {
   // logic to sign up admin
 // console.log(req.body);
    const admin = req.body;
+   console.log(admin);
   const isexists = ADMINS.find(a=>a.username === admin.username);
   if(isexists){
     res.status(404).send("user already exists");
@@ -40,14 +41,33 @@ app.post('/admin/signup', (req, res) => {
   }
 });
 
-app.post('/admin/login',Adiminauthentication, (req, res) => {
+app.post('/admin/login',Adminauthentication, (req, res) => {
   // logic to log in admin
     res.status(200).send("user logged in succesfully");
   
 });
 
-app.post('/admin/courses', (req, res) => {
+app.post('/admin/courses', Adminauthentication, (req, res) => {
   // logic to create a course
+  const course = req.body;
+  console.log(course);
+  // if(!course.title){
+  //   res.status(404).send("plz pass the title of course");
+  //   return;
+  // }
+  // if(!course.description){
+  //   res.status(404).send("plz pass the description of course");
+  //   return;
+  // }
+  // if(!course.price){
+  //   res.status(404).send("plz pss the price of course");
+  //   return;
+  // }
+  
+  course.id = Date.now();
+  COURSES.push(course);
+  res.status(200).json({message: "course created", courseid : course.id});
+  
 });
 
 app.put('/admin/courses/:courseId', (req, res) => {
