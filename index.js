@@ -85,8 +85,9 @@ app.put('/admin/courses/:courseId', Adminauthentication, (req, res) => {
 
 });
 
-app.get('/admin/courses', (req, res) => {
+app.get('/admin/courses', Adminauthentication,(req, res) => {
   // logic to get all courses
+  res.status(200).json(COURSES);
 });
 
 // User routes
