@@ -12,8 +12,7 @@ let COURSES = [];
 
 function Adminauthentication(req,res,next){
   const {username, password}  = req.headers;
-  console.log(username  + " " +  password);
-  console.log(ADMINS);
+ 
   const isexists = ADMINS.find(a=>a.username === username && a.password === password);
 
   console.log(isexists);
@@ -31,7 +30,7 @@ app.post('/admin/signup', (req, res) => {
   // logic to sign up admin
 // console.log(req.body);
    const admin = req.body;
-   console.log(admin);
+   
   const isexists = ADMINS.find(a=>a.username === admin.username);
   if(isexists){
     res.status(404).send("user already exists");
@@ -50,19 +49,19 @@ app.post('/admin/login',Adminauthentication, (req, res) => {
 app.post('/admin/courses', Adminauthentication, (req, res) => {
   // logic to create a course
   const course = req.body;
-  console.log(course);
-  // if(!course.title){
-  //   res.status(404).send("plz pass the title of course");
-  //   return;
-  // }
-  // if(!course.description){
-  //   res.status(404).send("plz pass the description of course");
-  //   return;
-  // }
-  // if(!course.price){
-  //   res.status(404).send("plz pss the price of course");
-  //   return;
-  // }
+  
+  if(!course.title){
+    res.status(404).send("plz pass the title of course");
+    return;
+  }
+  if(!course.description){
+    res.status(404).send("plz pass the description of course");
+    return;
+  }
+  if(!course.price){
+    res.status(404).send("plz pss the price of course");
+    return;
+  }
   
   course.id = Date.now();
   COURSES.push(course);
@@ -70,8 +69,20 @@ app.post('/admin/courses', Adminauthentication, (req, res) => {
   
 });
 
-app.put('/admin/courses/:courseId', (req, res) => {
-  // logic to edit a course
+app.put('/admin/courses/:courseId', Adminauthentication, (req, res) => {
+  const id = Number(req.params.courseId);
+  const course = COURSES.find(a=> a.id === id);
+
+   
+
+  if(course){
+    Object.assign(course,req.body);
+    
+    res.status(200).json({COURSES},"here is courses aray");
+  }else{
+    res.status(404).send("no course exists with id ", id);
+  }
+
 });
 
 app.get('/admin/courses', (req, res) => {
