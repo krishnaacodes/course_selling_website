@@ -22,7 +22,16 @@ function Adminauthentication(req,res,next){
   }else{
     res.status(404).send("user or password is wrong or not found");
   }
+}
 
+function userAuthentication(req,res,next){
+  const {username,password} = req.headers;
+  const isexists = USERS.find(a=> a.username === username && a.password === password);
+  if(isexists){
+    next();
+  }else{
+    res.status(404).send("user not exist ! first sign up to cintinue");
+  }
 }
 
 // Admin routes
@@ -93,10 +102,22 @@ app.get('/admin/courses', Adminauthentication,(req, res) => {
 // User routes
 app.post('/users/signup', (req, res) => {
   // logic to sign up user
+  const user = {...req.body,purchasedcourse : []};
+  const isexists = USERS.find(a => user.username === a.username);
+  if(isexists){
+    
+    res.status(404).send("user already exists");
+
+  }else{
+    USERS.push(user);
+    res.status(200).send("user created " , USERS);
+  }
+
 });
 
-app.post('/users/login', (req, res) => {
+app.post('/users/login', userAuthentication, (req, res) => {
   // logic to log in user
+  res.status(200).send("logged in succesfully");
 });
 
 app.get('/users/courses', (req, res) => {
