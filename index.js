@@ -15,7 +15,7 @@ function Adminauthentication(req,res,next){
  
   const isexists = ADMINS.find(a=>a.username === username && a.password === password);
 
-  console.log(isexists);
+  
  
   if(isexists){
     next();
@@ -38,13 +38,13 @@ function userAuthentication(req,res,next){
 app.post('/admin/signup', (req, res) => {
   // logic to sign up admin
 // console.log(req.body);
-   const admin = req.body;
+   const {username,password} = req.headers;
    
-  const isexists = ADMINS.find(a=>a.username === admin.username);
+  const isexists = ADMINS.find(a=>a.username === username);
   if(isexists){
     res.status(404).send("user already exists");
   }else{
-    ADMINS.push(admin);
+    ADMINS.push({"username":username,"password":password});
     res.status(200).send("user created succesfully");
   }
 });
@@ -120,16 +120,28 @@ app.post('/users/login', userAuthentication, (req, res) => {
   res.status(200).send("logged in succesfully");
 });
 
-app.get('/users/courses', (req, res) => {
+app.get('/users/courses',userAuthentication, (req, res) => {
   // logic to list all courses
+  res.status(200).json({courses : COURSES.filter(a=>a.published)})
 });
 
-app.post('/users/courses/:courseId', (req, res) => {
+app.post('/users/courses/:courseId', userAuthentication,(req, res) => {
   // logic to purchase a course
+  const id = parseInt(req.params.courseId);
+  const course = COURSES.find(a=>a.id === id);
+  console.log(course);
+  const username = req.body.username;
+  const user = USERS.find(a=>a.username === username);
+  console.log("users " , user);
+  user.purchasedcourse.push(course);
+  res.status(200).send("course purchased succesfully : " , course);
 });
 
-app.get('/users/purchasedCourses', (req, res) => {
+app.get('/users/purchasedCourses',userAuthentication, (req, res) => {
   // logic to view purchased courses
+  const username = req.headers.username;
+  const user = USERS.find(a=>a.username===username);
+  res.status(200).json({purchasedcourse:user.purchasedcourse});
 });
 
 app.listen(3000, () => {
