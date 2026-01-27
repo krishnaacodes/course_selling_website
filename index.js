@@ -1,4 +1,5 @@
 const express = require('express');
+const jwt = require("jsonwebtoken");
 const app = express();
 
 app.use(express.json());
@@ -8,6 +9,9 @@ app.use(express.json());
 let ADMINS = [];
 let USERS = [];
 let COURSES = [];
+
+
+const secret = "bharatmatakijay,vandematram"
 
 
 function Adminauthentication(req,res,next){
@@ -34,24 +38,35 @@ function userAuthentication(req,res,next){
   }
 }
 
+const generatejwt = (admin) =>{
+  const paylod = {user:admin.username};
+  return jwt.sign(paylod,secret,{expiresIn:'1h'});
+}
+
 // Admin routes
 app.post('/admin/signup', (req, res) => {
-  // logic to sign up admin
-// console.log(req.body);
-   const {username,password} = req.headers;
-   
-  const isexists = ADMINS.find(a=>a.username === username);
+      
+  const admin = req.body;
+  const isexists = ADMINS.find(a=>a.username === admin.username);
   if(isexists){
     res.status(404).send("user already exists");
   }else{
-    ADMINS.push({"username":username,"password":password});
-    res.status(200).send("user created succesfully");
+    ADMINS.push(admin);
+    const token = generatejwt(admin);
+    res.status(200).send({message:"admin created succesfully ",token});
   }
 });
 
-app.post('/admin/login',Adminauthentication, (req, res) => {
+app.post('/admin/login', (req, res) => {
   // logic to log in admin
-    res.status(200).send("user logged in succesfully");
+  const {username,password} = req.body;
+  const admin = ADMINS.find(a=>a.username === username && a.password === password);
+  if(admin){
+    const token = generatejwt(admin);
+    res.status(200).send({message  : "logged in : ", token});
+  }else{
+    res.status(200).send("admin authentication failed");
+  }
   
 });
 
