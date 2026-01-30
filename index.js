@@ -1,6 +1,7 @@
 const express = require('express');
 const jwt = require("jsonwebtoken");
 const app = express();
+const mongoose = require("mongoose");
 
 app.use(express.json());
 // const bodyparser = require("body-parser");
@@ -11,7 +12,30 @@ let USERS = [];
 let COURSES = [];
 
 
-const secret = "bharatmatakijay,vandematram"
+const secret = "bharatmatakijay,vandematram";
+
+const UserSchema = new mongoose.Schema({
+  username:String,
+  password:String,
+  purchasedcourse:[{type:mongoose.Schema.Types.ObjectId , ref:'courses'}]
+});
+
+const AdminSchema = new mongoose.Schema({
+  username:String,
+  password:String
+})
+
+const CourseSchema = new mongoose.Schema({
+  title:String,
+  description:String,
+  price : String,
+  published:Boolean
+})
+
+
+const User = mongoose.model('user',UserSchema);
+const Admin = mongoose.model('admin',AdminSchema);
+const Courses = mongoose.model('courses',CourseSchema);
 
 
 function authentication(req,res,next){
@@ -60,43 +84,43 @@ const generatejwt = (admin) =>{
 
 // }
 
+mongoose.connect('mongodb+srv://krishnkantsjp2004_db_user:krishna123@cluster0.aao6s49.mongodb.net/test')
+
 // Admin routes
-app.post('/admin/signup', (req, res) => {
+app.post('/admin/signup', async (req, res) => {
       
-  const admin = req.body;
-  const isexists = ADMINS.find(a=>a.username === admin.username);
-  if(isexists){
+  const {username,password} = req.body;
+  const admin = await Admin.findOne({username});
+  if(admin){
     res.status(404).send("user already exists");
   }else{
-    Object.assign(admin,{role:"admin"});
-    ADMINS.push(admin);
-    const token = generatejwt(admin);
+    const newAdmin = new Admin({username:username,password:password});
+    await newAdmin.save();
+    
+    const token = generatejwt({username , role:'admin'});
     res.status(200).send({message:"admin created succesfully ",token});
   }
 });
 
-app.post('/admin/login',  (req, res) => {
+app.post('/admin/login',  async (req, res) => {
   // logic to log in admin
 
-  const admin = {
-    username : req.body.username,
-    password : req.body.password,
-    role : "admin"
-  }
+const {username , password} = req.body;
 
-  const user = ADMINS.find(a=>a.username===admin.username && a.password===admin.password);
-  
-    if(user){
-    const token = generatejwt(admin);
-    res.status(200).send({message  : "logged in : ", token});
-    }else{
-    res.status(405).send("no user exists");
-    }
+const admin = await ADMINS.findone({username,password});
+
+if(admin){
+   const token = generatejwt({username , role:'admin'});
+    res.status(200).send({message:"logged in succensfully ",token});
+}else{
+    res.status(404).send("user or password is incorrect");
+}
+
 });
 
-app.post('/admin/courses', authentication, adminAuthentication, (req, res) => {
+app.post('/admin/courses', authentication, adminAuthentication, async (req, res) => {
   // logic to create a course
-  const course = req.body;
+  const course = new Courses(req.body);
   
   if(!course.title){
     res.status(404).send("plz pass the title of course");
@@ -112,23 +136,19 @@ app.post('/admin/courses', authentication, adminAuthentication, (req, res) => {
   }
   
   course.id = Date.now();
-  COURSES.push(course);
+  await Courses.save();
+  
+
   res.status(200).json({message: "course created", courseid : course.id});
   
 });
 
-app.put('/admin/courses/:courseId',authentication, adminAuthentication, (req, res) => {
-  const id = Number(req.params.courseId);
-  const course = COURSES.find(a=> a.id === id);
-
-   
-
+app.put('/admin/courses/:courseId',authentication, adminAuthentication, async (req, res) => {
+  const course = await Courses.findByIdAndUpdate(req,params.courseid,req.body,{new : true});
   if(course){
-    Object.assign(course,req.body);
-    
-    res.status(200).json({COURSES},"here is courses aray");
+    res.status(200).send({message : "course updated" , course});
   }else{
-    res.status(404).send("no course exists with id ", id);
+    res.status(404).send({message : "course not found"});
   }
 
 });
