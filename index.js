@@ -150,45 +150,40 @@ app.put('/admin/courses/:courseId',authentication, adminAuthentication, async (r
   }else{
     res.status(404).send({message : "course not found"});
   }
-
 });
 
-app.get('/admin/courses', authentication,adminAuthentication,(req, res) => {
+app.get('/admin/courses', authentication,adminAuthentication,async (req, res) => {
   // logic to get all courses
-  res.status(200).json(COURSES);
+  const courses = await Courses.find({});
+  res.status(200).json({courses});
 });
 
 // User routes
-app.post('/users/signup', (req, res) => {
+app.post('/users/signup', async (req, res) => {
   // logic to sign up user
-  const user = {...req.body,role:"user",purchasedcourse : []};
-  const isexists = USERS.find(a => user.username === a.username);
-  if(isexists){
-    
-    res.status(404).send("user already exists");
-
-  }else{
-    USERS.push(user);
-    const token = generatejwt(user);
-    res.status(200).send("user created " , token);
-  }
+  const {username,password} = req.body;
+ const user = await User.findOne({username});
+ if(user){
+  res.status(409).send("user already exists");
+ }else{
+  const newuser = new User({username,password});
+  await newuser.save();
+  const token = generatejwt({username,role:'user'});
+  res.status(200).send({message : "you are signuped" , token});
+ }
 });
 
-app.post('/users/login', (req, res) => {
+app.post('/users/login', async (req, res) => {
   // logic to log in user
   
-  
-  const user = USERS.find(a=>a.username === req.body.username && a.password === req.body.password);
-  if(user){
-   
-      const token = generatejwt(user);
-
-  res.status(200).send({"logged in succesfully" : token });
-    
-
-  }else{
-   res.status(404).send("no user exists");
-  }
+  const {username,password} = req.body;
+const user = await User.findOne({username,password});
+if(user){
+  const token = generatejwt({username,role:'user'});
+  res.status(200).json({message:"you are logged in",token});
+}else{
+//   res.status(403).send("user or password is wrong");
+}
 
 });
 
