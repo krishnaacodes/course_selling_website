@@ -17,7 +17,7 @@ const secret = "bharatmatakijay,vandematram";
 const UserSchema = new mongoose.Schema({
   username:String,
   password:String,
-  purchasedcourse:[{type:mongoose.Schema.Types.ObjectId , ref:'courses'}]
+  purchasedcourse:[{type:mongoose.Schema.Types.ObjectId , ref:'Course'}]
 });
 
 const AdminSchema = new mongoose.Schema({
@@ -35,7 +35,7 @@ const CourseSchema = new mongoose.Schema({
 
 const User = mongoose.model('user',UserSchema);
 const Admin = mongoose.model('admin',AdminSchema);
-const Courses = mongoose.model('courses',CourseSchema);
+const Course = mongoose.model('courses',CourseSchema);
 
 
 function authentication(req,res,next){
@@ -120,7 +120,7 @@ if(admin){
 
 app.post('/admin/courses', authentication, adminAuthentication, async (req, res) => {
   // logic to create a course
-  const course = new Courses(req.body);
+  const course = new Course(req.body);
   
   if(!course.title){
     res.status(404).send("plz pass the title of course");
@@ -144,7 +144,7 @@ app.post('/admin/courses', authentication, adminAuthentication, async (req, res)
 });
 
 app.put('/admin/courses/:courseId',authentication, adminAuthentication, async (req, res) => {
-  const course = await Courses.findByIdAndUpdate(req,params.courseid,req.body,{new : true});
+  const course = await Course.findByIdAndUpdate(req,params.courseid,req.body,{new : true});
   if(course){
     res.status(200).send({message : "course updated" , course});
   }else{
@@ -154,7 +154,7 @@ app.put('/admin/courses/:courseId',authentication, adminAuthentication, async (r
 
 app.get('/admin/courses', authentication,adminAuthentication,async (req, res) => {
   // logic to get all courses
-  const courses = await Courses.find({});
+  const courses = await Course.find({});
   res.status(200).json({courses});
 });
 
@@ -176,39 +176,53 @@ app.post('/users/signup', async (req, res) => {
 app.post('/users/login', async (req, res) => {
   // logic to log in user
   
-  const {username,password} = req.body;
+const {username,password} = req.body;
 const user = await User.findOne({username,password});
 if(user){
   const token = generatejwt({username,role:'user'});
   res.status(200).json({message:"you are logged in",token});
 }else{
-//   res.status(403).send("user or password is wrong");
+   res.status(403).send("user or password is wrong");
 }
-
 });
 
-app.get('/users/courses',authentication,userAuthentication, (req, res) => {
+app.get('/users/courses',authentication,userAuthentication, async (req, res) => {
   // logic to list all courses
-  res.status(200).json({courses : COURSES.filter(a=>a.published)})
+  const courses = await Course.find({published:true});
+  res.status(200).json({courses : courses});
 });
 
-app.post('/users/courses/:courseId',authentication,userAuthentication,(req,res)=>{
+app.post('/users/courses/:courseId',authentication,userAuthentication,async(req,res)=>{
   // logic to purchase a course
-  const id = parseInt(req.params.courseId);
-  const course = COURSES.find(a=>a.id === id);
   
-  const username = req.user.username;
-  
-  const user = USERS.find(a=>a.username === username);
-  user.purchasedcourse.push(course);
-  res.status(200).send("course purchased succesfully : " , course);
+  const course = await Course.findById(req.params.courseId);
+  if(course){
+    const user = await User.findOne({username : req.user.username});
+    if(user){
+      user.purchasedcourse.push(course.id);
+      await user.save();
+      res.status(200).send("course purchased");
+    }else{
+      res.status(403).send("user dont exists");
+    }
+  }else{
+    res.status(402).send("no course exists with this id");
+  }
 });
 
-app.get('/users/purchasedCourses',authentication,userAuthentication, (req, res) => {
+app.get('/users/purchasedCourses',authentication,userAuthentication, async (req, res) => {
   // logic to view purchased courses
-  const username = req.user.username;
-  const user = USERS.find(a=>a.username===username);
-  res.status(200).json({purchasedcourse:user.purchasedcourse});
+  const user = await User
+    .findOne({ username: req.user.username })
+    .populate('purchasedcourse');
+
+  if (user) {
+    res.json({
+      purchasedCourses: user.purchasedcourse || []
+    });
+  } else {
+    res.status(403).json({ message: 'User not found' });
+  }
 });
 
 app.listen(3000, () => {
