@@ -7,9 +7,7 @@ app.use(express.json());
 // const bodyparser = require("body-parser");
 // app.use(bodyparser.json());
 
-let ADMINS = [];
-let USERS = [];
-let COURSES = [];
+
 
 
 const secret = "bharatmatakijay,vandematram";
@@ -17,7 +15,10 @@ const secret = "bharatmatakijay,vandematram";
 const UserSchema = new mongoose.Schema({
   username:String,
   password:String,
-  purchasedcourse:[{type:mongoose.Schema.Types.ObjectId , ref:'Course'}]
+purchasedCourses: [{
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Course"
+}]
 });
 
 const AdminSchema = new mongoose.Schema({
@@ -33,9 +34,9 @@ const CourseSchema = new mongoose.Schema({
 })
 
 
-const User = mongoose.model('user',UserSchema);
-const Admin = mongoose.model('admin',AdminSchema);
-const Course = mongoose.model('courses',CourseSchema);
+const User = mongoose.model('User',UserSchema);
+const Admin = mongoose.model('Admin',AdminSchema);
+const Course = mongoose.model('Course',CourseSchema);
 
 
 function authentication(req,res,next){
@@ -84,7 +85,10 @@ const generatejwt = (admin) =>{
 
 // }
 
-mongoose.connect('mongodb+srv://krishnkantsjp2004_db_user:krishna123@cluster0.aao6s49.mongodb.net/test')
+mongoose.connect('mongodb+srv://krishnkantsjp2004_db_user:krishna123@cluster0.aao6s49.mongodb.net/courses')
+
+
+
 
 // Admin routes
 app.post('/admin/signup', async (req, res) => {
@@ -107,7 +111,7 @@ app.post('/admin/login',  async (req, res) => {
 
 const {username , password} = req.body;
 
-const admin = await ADMINS.findone({username,password});
+const admin = await Admin.findone({username,password});
 
 if(admin){
    const token = generatejwt({username , role:'admin'});
@@ -136,7 +140,7 @@ app.post('/admin/courses', authentication, adminAuthentication, async (req, res)
   }
   
   course.id = Date.now();
-  await Courses.save();
+  await Course.save();
   
 
   res.status(200).json({message: "course created", courseid : course.id});
@@ -144,7 +148,7 @@ app.post('/admin/courses', authentication, adminAuthentication, async (req, res)
 });
 
 app.put('/admin/courses/:courseId',authentication, adminAuthentication, async (req, res) => {
-  const course = await Course.findByIdAndUpdate(req,params.courseid,req.body,{new : true});
+  const course = await Course.findByIdAndUpdate(req.params.courseid,req.body,{new : true});
   if(course){
     res.status(200).send({message : "course updated" , course});
   }else{
@@ -199,7 +203,7 @@ app.post('/users/courses/:courseId',authentication,userAuthentication,async(req,
   if(course){
     const user = await User.findOne({username : req.user.username});
     if(user){
-      user.purchasedcourse.push(course.id);
+      user.purchasedcourse.push(course._id);
       await user.save();
       res.status(200).send("course purchased");
     }else{
